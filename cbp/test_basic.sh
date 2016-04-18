@@ -1,8 +1,8 @@
 #!/bin/bash
 
-S=gbptest
+S=cbptest
 hoversock=127.0.0.1:5000
-gbpsock=127.0.0.1:5001
+cbpsock=127.0.0.1:5001
 upstreamsock=127.0.0.1:5002
 files=()
 
@@ -26,7 +26,7 @@ trap cleanup EXIT
 tmux new-session -s $S -n "source" -d
 tmux new-window -t $S:1 -n "hoverd"
 tmux new-window -t $S:2 -n "upstream"
-tmux new-window -t $S:3 -n "gbp"
+tmux new-window -t $S:3 -n "cbp"
 tmux new-window -t $S:4 -n "test1"
 tmux new-window -t $S:5 -n "test2"
 
@@ -34,15 +34,15 @@ tmux new-window -t $S:5 -n "test2"
 sleep 20 &
 w=$!
 tmux send -t $S:0 'go get github.com/iovisor/iomodules/hover/hoverd; x=$?' C-m
-tmux send -t $S:0 'go get github.com/iovisor/iomodules/gbp/gbp; x=$[$x+$?]' C-m
+tmux send -t $S:0 'go get github.com/iovisor/iomodules/cbp/cbp; x=$[$x+$?]' C-m
 tmux send -t $S:0 'go install github.com/iovisor/iomodules/hover/hoverd; x=$[$x+$?]' C-m
-tmux send -t $S:0 'go install github.com/iovisor/iomodules/gbp/gbp; x=$[$x+$?]' C-m
+tmux send -t $S:0 'go install github.com/iovisor/iomodules/cbp/cbp; x=$[$x+$?]' C-m
 tmux send -t $S:0 'docker pull gliderlabs/alpine; x=$[$x+$?]' C-m
 tmux send -t $S:0 "[[ \$x -eq 0 ]] && kill $w" C-m
 wait $w &> /dev/null && { echo "source fetch took too long"; exit 1; }
 
-# Start the hover server, a stub upstream server, and finally the gbp server.
-# The upstream server should be replaced with a real GBP implementation.
+# Start the hover server, a stub upstream server, and finally the cbp server.
+# The upstream server should be replaced with a real CBP implementation.
 sleep 10 &
 w=$!
 tmux send -t $S:1 "sudo -E hoverd -listen $hoversock" C-m
@@ -50,20 +50,20 @@ sleep 1
 tmux send -t $S:2 'echo -en "HTTP/1.0 200 OK\r\n\r\n" | nc -l 5002' C-m
 tmux send -t $S:2 "kill $w" C-m
 sleep 1
-tmux send -t $S:3 "gbp -upstream http://$upstreamsock -listen $gbpsock -dataplane http://$hoversock" C-m
+tmux send -t $S:3 "cbp -upstream http://$upstreamsock -listen $cbpsock -dataplane http://$hoversock" C-m
 sleep 1
 wait $w &> /dev/null && { echo "server startup took too long"; exit 1; }
 
-# find the new uuid of the gbp server in the hover db
+# find the new uuid of the cbp server in the hover db
 id=$(http GET 127.0.0.1:5001/info | jq -r .id)
 echo $id
 
 links1=$(ip link show | awk -F'[ @\t:]*' '/master docker0/ {print $2}' | sort)
 # start two test clients
-tmux send -t $S:4 "docker run --rm -ti --name gbptest1 gliderlabs/alpine sh" C-m
+tmux send -t $S:4 "docker run --rm -ti --name cbptest1 gliderlabs/alpine sh" C-m
 sleep 1
 links2=$(ip link show | awk -F'[ @\t:]*' '/master docker0/ {print $2}' | sort)
-tmux send -t $S:5 "docker run --rm -ti --name gbptest2 gliderlabs/alpine sh" C-m
+tmux send -t $S:5 "docker run --rm -ti --name cbptest2 gliderlabs/alpine sh" C-m
 sleep 1
 links3=$(ip link show | awk -F'[ @\t:]*' '/master docker0/ {print $2}' | sort)
 
@@ -72,15 +72,15 @@ if1=$(comm -3 <(echo "${links1[*]}") <(echo "${links2[*]}") | xargs)
 if2=$(comm -3 <(echo "${links2[*]}") <(echo "${links3[*]}") | xargs)
 IFS=$oldIFS
 
-ip1=$(docker inspect -f {{.NetworkSettings.IPAddress}} gbptest1)
-ip2=$(docker inspect -f {{.NetworkSettings.IPAddress}} gbptest2)
+ip1=$(docker inspect -f {{.NetworkSettings.IPAddress}} cbptest1)
+ip2=$(docker inspect -f {{.NetworkSettings.IPAddress}} cbptest2)
 echo $ip1 $ip2
 if [[ "$ip1" = "" || "$ip2" = "" ]]; then
   echo "could not determine IPs of test containers"
   exit 1
 fi
 
-f=$(mktemp /tmp/gbpserver_XXXXXX.py)
+f=$(mktemp /tmp/cbpserver_XXXXXX.py)
 files+=($f)
 
 cat > $f <<'DELIM__'
@@ -202,10 +202,10 @@ except KeyboardInterrupt:
 DELIM__
 
 tmux send -t $S:2 "python2 $f" C-m
-echo '{"resolved-policy-uri": "/restconf/operational/resolved-policy:resolved-policies/resolved-policy/tenant-red/clients/tenant-red/webservers"}' | http POST http://$gbpsock/policies/
+echo '{"resolved-policy-uri": "/restconf/operational/resolved-policy:resolved-policies/resolved-policy/tenant-red/clients/tenant-red/webservers"}' | http POST http://$cbpsock/policies/
 echo '{"module": "'$id'"}' | http POST http://$hoversock/modules/host/interfaces/$if1/policies/
 echo '{"module": "'$id'"}' | http POST http://$hoversock/modules/host/interfaces/$if2/policies/
-echo '{"ip": "'$ip1'", "tenant": "tenant-red", "epg": "webservers"}' | http POST http://$gbpsock/endpoints/
-echo '{"ip": "'$ip2'", "tenant": "tenant-red", "epg": "clients"}' | http POST http://$gbpsock/endpoints/
+echo '{"ip": "'$ip1'", "tenant": "tenant-red", "epg": "webservers"}' | http POST http://$cbpsock/endpoints/
+echo '{"ip": "'$ip2'", "tenant": "tenant-red", "epg": "clients"}' | http POST http://$cbpsock/endpoints/
 
 read -p "tmux ready, run 'tmux attach -t $S' from another shell: "

@@ -21,7 +21,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/iovisor/iomodules/gbp"
+	"github.com/iovisor/iomodules/cbp"
 )
 
 var upstreamUrl string
@@ -32,7 +32,7 @@ var helpFlag bool
 func init() {
 	const (
 		upstreamDefault     = ""
-		upstreamHelp        = "Upstream GBP API endpoint URL"
+		upstreamHelp        = "Upstream CBP API endpoint URL"
 		dataplaneDefault    = ""
 		dataplaneHelp       = "Local dataplane URL"
 		listenSocketDefault = "127.0.0.1:5001"
@@ -67,16 +67,16 @@ func main() {
 		flag.Usage()
 		os.Exit(1)
 	}
-	notifier := gbp.NewNotifier(upstreamUrl, listenSocket)
+	notifier := cbp.NewNotifier(upstreamUrl, listenSocket)
 	if err := notifier.NotifyEndpointUp(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	g, err := gbp.NewServer(upstreamUrl, dataplaneUrl)
+	g, err := cbp.NewServer(upstreamUrl, dataplaneUrl)
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
 	}
-	gbp.Info.Printf("GBP Server listening on %s\n", listenSocket)
+	cbp.Info.Printf("CBP Server listening on %s\n", listenSocket)
 	http.ListenAndServe(listenSocket, g.Handler())
 }

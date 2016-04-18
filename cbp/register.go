@@ -14,7 +14,7 @@
 
 // Notify southbound renderer of new interfaces
 
-package gbp
+package cbp
 
 import (
 	"bytes"

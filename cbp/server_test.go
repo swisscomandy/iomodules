@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gbp
+package cbp
 
 import (
 	"bytes"
@@ -142,7 +142,7 @@ type testCase struct {
 	code int       // expected pass criteria
 }
 
-// this class will mock the request/response of an upstream GBP renderer
+// this class will mock the request/response of an upstream CBP renderer
 type mockUpstream struct {
 }
 

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gbp
+package cbp
 
 import (
 	"encoding/json"
@@ -31,7 +31,7 @@ type routeResponse struct {
 	body        interface{}
 }
 
-type GbpServer struct {
+type CbpServer struct {
 	handler     http.Handler
 	upstreamUri string
 	dataplane   *Dataplane
@@ -127,7 +127,7 @@ type infoEntry struct {
 	Id string `json:"id"`
 }
 
-func (g *GbpServer) handleInfoGet(r *http.Request) routeResponse {
+func (g *CbpServer) handleInfoGet(r *http.Request) routeResponse {
 	return routeResponse{
 		body: &infoEntry{
 			Id: g.dataplane.Id(),
@@ -135,7 +135,7 @@ func (g *GbpServer) handleInfoGet(r *http.Request) routeResponse {
 	}
 }
 
-func (g *GbpServer) handlePolicyList(r *http.Request) routeResponse {
+func (g *CbpServer) handlePolicyList(r *http.Request) routeResponse {
 	return notFound()
 }
 
@@ -147,7 +147,7 @@ type createPolicyRequest struct {
 	ResolvedPolicy *ResolvedPolicy `json:"resolved-policies"`
 }
 
-func (g *GbpServer) handlePolicyPost(r *http.Request) routeResponse {
+func (g *CbpServer) handlePolicyPost(r *http.Request) routeResponse {
 	var req createPolicyRequestUri
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		panic(err)
@@ -182,17 +182,17 @@ func (g *GbpServer) handlePolicyPost(r *http.Request) routeResponse {
 	}
 	return routeResponse{}
 }
-func (g *GbpServer) handlePolicyGet(r *http.Request) routeResponse {
+func (g *CbpServer) handlePolicyGet(r *http.Request) routeResponse {
 	return notFound()
 }
-func (g *GbpServer) handlePolicyPut(r *http.Request) routeResponse {
+func (g *CbpServer) handlePolicyPut(r *http.Request) routeResponse {
 	return notFound()
 }
-func (g *GbpServer) handlePolicyDelete(r *http.Request) routeResponse {
+func (g *CbpServer) handlePolicyDelete(r *http.Request) routeResponse {
 	return notFound()
 }
 
-func (g *GbpServer) handleEndpointList(r *http.Request) routeResponse {
+func (g *CbpServer) handleEndpointList(r *http.Request) routeResponse {
 	entries := []*EndpointEntry{}
 	for endpoint := range g.dataplane.Endpoints() {
 		entries = append(entries, endpoint)
@@ -200,7 +200,7 @@ func (g *GbpServer) handleEndpointList(r *http.Request) routeResponse {
 	return routeResponse{body: entries}
 }
 
-func (g *GbpServer) handleEndpointPost(r *http.Request) routeResponse {
+func (g *CbpServer) handleEndpointPost(r *http.Request) routeResponse {
 	var req EndpointEntry
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		panic(err)
@@ -210,25 +210,25 @@ func (g *GbpServer) handleEndpointPost(r *http.Request) routeResponse {
 	}
 	return routeResponse{body: req}
 }
-func (g *GbpServer) handleEndpointGet(r *http.Request) routeResponse {
+func (g *CbpServer) handleEndpointGet(r *http.Request) routeResponse {
 	return notFound()
 }
-func (g *GbpServer) handleEndpointPut(r *http.Request) routeResponse {
+func (g *CbpServer) handleEndpointPut(r *http.Request) routeResponse {
 	return notFound()
 }
-func (g *GbpServer) handleEndpointDelete(r *http.Request) routeResponse {
+func (g *CbpServer) handleEndpointDelete(r *http.Request) routeResponse {
 	return notFound()
 }
 
-func (g *GbpServer) Handler() http.Handler {
+func (g *CbpServer) Handler() http.Handler {
 	return g.handler
 }
 
-func NewServer(upstreamUri, dataplaneUri string) (*GbpServer, error) {
-	Info.Println("GBP module starting")
+func NewServer(upstreamUri, dataplaneUri string) (*CbpServer, error) {
+	Info.Println("CBP module starting")
 	rtr := mux.NewRouter()
 
-	g := &GbpServer{
+	g := &CbpServer{
 		handler:     rtr,
 		upstreamUri: upstreamUri,
 		dataplane:   NewDataplane(":memory:"),

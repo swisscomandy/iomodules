@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gbp
+package cbp
 
 import (
 	"bytes"
@@ -245,7 +245,7 @@ func (d *Dataplane) Init(baseUrl string) error {
 	d.baseUrl = baseUrl
 	req := map[string]interface{}{
 		"module_type":  "bpf",
-		"display_name": "gbp",
+		"display_name": "cbp",
 		"config": map[string]interface{}{
 			"code": filterImplC,
 		},
